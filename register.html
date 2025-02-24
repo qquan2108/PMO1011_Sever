@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng Ký</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f4f4f4;
+        }
+        .login-container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 300px;
+            text-align: center;
+        }
+        .login-container h2 {
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .form-group button {
+            width: 100%;
+            padding: 10px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .form-group button:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+<body>
+
+<div class="login-container">
+    <h2>Đăng Ký</h2>
+    <div class="form-group">
+        <label for="name">Tên:</label>
+        <input type="text" id="name" name="name" required>
+    </div>
+    <div class="form-group">
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" required>
+    </div>
+    <div class="form-group">
+        <label for="password">Mật khẩu:</label>
+        <input type="password" id="password" name="password" required>
+    </div>
+    <div class="form-group">
+        <label for="phone">Số điện thoại (tùy chọn):</label>
+        <input type="text" id="phone" name="phone">
+    </div>
+    <div class="form-group">
+        <label for="address">Địa chỉ (tùy chọn):</label>
+        <input type="text" id="address" name="address">
+    </div>
+    <button onclick="register()">Đăng Ký</button>
+</div>
+
+<script>
+    async function register() {
+        const name = document.getElementById('name').value;
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const phone = document.getElementById('phone').value || null;
+        const address = document.getElementById('address').value || null;
+
+        try {
+            const response = await fetch('https://pma1011-sever.onrender.com/users/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name, email, password, phone, address })
+            });
+
+            if (!response.ok) {
+                throw new Error('Đăng ký thất bại');
+            }
+
+            const result = await response.json();
+            alert(`Đăng ký thành công! Xin chào ${result.name}`);
+            // Tại đây có thể chuyển hướng người dùng đến trang đăng nhập
+        } catch (error) {
+            alert(error.message);
+        }
+    }
+</script>
+
+</body>
+</html>
