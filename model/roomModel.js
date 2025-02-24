@@ -4,6 +4,7 @@ const roomSchema = new mongoose.Schema({
     type: { type: String, required: true },
     price: { type: Number, required: true },
     status: { type: String, enum: ['available', 'booked', 'cleaning'], default: 'available' },
-    imageUrl: { type: String } // Thêm trường imageUrl
+    imageUrl: { type: String }, // Thêm trường imageUrl
+    review: { type: String}
 });
 module.exports = mongoose.model('Room', roomSchema);
