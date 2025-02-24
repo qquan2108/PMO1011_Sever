@@ -83,4 +83,20 @@ router.get('/customers', async (req, res) => {
     res.json(customers);
 });
 
+router.get('/search', async (req, res) => {
+    try {
+        const { keyword } = req.query;
+        const staffs = await Staff.find({
+            $or: [
+                { name: new RegExp(keyword, 'i') },
+                { email: new RegExp(keyword, 'i') }
+            ]
+        });
+        res.json(staffs);
+    } catch (error) {
+        res.status(500).json({ message: "Lỗi máy chủ", error: error.message });
+    }
+});
+
+
 module.exports = router;

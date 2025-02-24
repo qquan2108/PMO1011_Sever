@@ -15,6 +15,17 @@ router.get('/ttusers', async (req, res) => {
   }
 });
 
+router.get('/bookings', async (req, res) => {
+  try {
+      const customers = await Booking.find().populate('userId').select('userId').distinct('userId');
+      const users = await User.find({ _id: { $in: customers } });
+      res.json(users);
+  } catch (error) {
+      res.status(500).json({ message: "Lỗi máy chủ", error: error.message });
+  }
+});
+
+
 router.put('/:id', async (req, res) => {
   try {
       const { name, email, password } = req.body;
@@ -33,6 +44,22 @@ router.put('/:id', async (req, res) => {
   } catch (error) {
       console.error(error);
       res.status(500).json({ message: "Lỗi máy chủ" });
+  }
+});
+
+router.put('/:id/role', async (req, res) => {
+  try {
+      const { role } = req.body;
+      if (!['user', 'staff', 'admin'].includes(role)) {
+          return res.status(400).json({ message: "Vai trò không hợp lệ" });
+      }
+
+      const updatedUser = await User.findByIdAndUpdate(req.params.id, { role }, { new: true });
+      if (!updatedUser) return res.status(404).json({ message: "Người dùng không tồn tại" });
+
+      res.json({ message: "Cập nhật vai trò thành công", user: updatedUser });
+  } catch (error) {
+      res.status(500).json({ message: "Lỗi máy chủ", error: error.message });
   }
 });
 

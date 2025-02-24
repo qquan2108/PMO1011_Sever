@@ -73,6 +73,23 @@ router.post('/:id/review', async (req, res) => {
     res.json({ message: "Đánh giá đã được ghi nhận!" });
 });
 
+router.put('/:id/status', async (req, res) => {
+    try {
+        const { status } = req.body;
+        if (!['available', 'booked', 'cleaning'].includes(status)) {
+            return res.status(400).json({ message: "Trạng thái không hợp lệ" });
+        }
+
+        const updatedRoom = await Room.findByIdAndUpdate(req.params.id, { status }, { new: true });
+        if (!updatedRoom) return res.status(404).json({ message: "Phòng không tồn tại" });
+
+        res.json({ message: "Cập nhật trạng thái phòng thành công", room: updatedRoom });
+    } catch (error) {
+        res.status(500).json({ message: "Lỗi máy chủ", error: error.message });
+    }
+});
+
+
 // [RQ22] Cập nhật chính sách giá phòng
 router.put('/:id/price', async (req, res) => {
     const { price } = req.body;
