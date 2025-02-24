@@ -40,6 +40,32 @@ router.get('/:id', async (req, res) => {
     res.json(room);
 });
 
+router.put('/:id', async (req, res) => {
+    try {
+        const { roomNumber, type, price, status, imageUrl } = req.body;
+        const updatedRoom = await Room.findByIdAndUpdate(req.params.id, { 
+            roomNumber, type, price, status, imageUrl 
+        }, { new: true });
+
+        if (!updatedRoom) return res.status(404).json({ message: "Phòng không tồn tại" });
+
+        res.json({ message: "Cập nhật phòng thành công", room: updatedRoom });
+    } catch (error) {
+        res.status(500).json({ message: "Lỗi máy chủ", error: error.message });
+    }
+});
+
+router.delete('/:id', async (req, res) => {
+    try {
+        const deletedRoom = await Room.findByIdAndDelete(req.params.id);
+        if (!deletedRoom) return res.status(404).json({ message: "Phòng không tồn tại" });
+
+        res.json({ message: "Xóa phòng thành công" });
+    } catch (error) {
+        res.status(500).json({ message: "Lỗi máy chủ", error: error.message });
+    }
+});
+
 // [RQ08] Đánh giá phòng
 router.post('/:id/review', async (req, res) => {
     const { userId, rating, comment } = req.body;
