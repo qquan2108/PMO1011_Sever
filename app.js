@@ -13,6 +13,7 @@ const bookingRoutes = require('./routes/bookingRoutes');
 const serviceRoutes = require('./routes/serviceRoutes');
 const promotionRoutes = require('./routes/promotionRoutes');
 const reportRoutes = require('./routes/reportRoutes');
+const hotRoomRoutes = require('./routes/hotRoomRoutes');
 
 var app = express();
 var cors = require('cors');
@@ -46,6 +47,7 @@ app.use('/bookings', bookingRoutes);
 app.use('/services', serviceRoutes);
 app.use('/promotions', promotionRoutes);
 app.use('/reports', reportRoutes);
+app.use('/hotroom', hotRoomRoutes);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
