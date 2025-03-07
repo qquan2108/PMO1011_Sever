@@ -1,9 +1,72 @@
 const express = require('express');
+const Room = require('../model/roomModel');
 const Booking = require('../model/bookingModel');
 
 const router = express.Router();
 
+// API lấy danh sách phòng
 router.get('/', async (req, res) => {
+    try {
+        const rooms = await Room.find();
+        res.status(200).json(rooms);
+    } catch (error) {
+        res.status(500).json({ message: 'Lỗi truy xuất dữ liệu' });
+    }
+});
+
+// API đặt phòng
+router.post('/:id/book', async (req, res) => {
+    try {
+        const { userId, checkInDate, checkOutDate } = req.body;
+        const room = await Room.findById(req.params.id);
+        
+        if (!room) {
+            return res.status(404).json({ message: 'Phòng không tồn tại' });
+        }
+
+        if (room.status === 'booked') {
+            return res.status(400).json({ message: 'Phòng đã được đặt' });
+        }
+
+        const newBooking = await Booking.create({
+            roomId: req.params.id,
+            userId,
+            checkInDate,
+            checkOutDate,
+            status: 'pending',
+        });
+
+        res.status(201).json({ message: 'Yêu cầu đặt phòng đã gửi!', booking: newBooking });
+    } catch (error) {
+        res.status(500).json({ message: 'Lỗi máy chủ', error: error.message });
+    }
+});
+
+// API admin duyệt đơn đặt phòng
+router.put('/booking/:bookingId/approve', async (req, res) => {
+    try {
+        const { status } = req.body; // 'approved' hoặc 'rejected'
+        const booking = await Booking.findById(req.params.bookingId);
+        
+        if (!booking) {
+            return res.status(404).json({ message: 'Đơn đặt phòng không tồn tại' });
+        }
+
+        booking.status = status;
+        await booking.save();
+        
+        if (status === 'approved') {
+            await Room.findByIdAndUpdate(booking.roomId, { status: 'booked' });
+        }
+
+        res.json({ message: `Đơn đặt phòng đã được ${status}`, booking });
+    } catch (error) {
+        res.status(500).json({ message: 'Lỗi máy chủ', error: error.message });
+    }
+});
+
+// API lấy danh sách đặt phòng
+router.get('/bookings', async (req, res) => {
     try {
         const { status } = req.query;
         const filter = status ? { status } : {};
@@ -14,7 +77,8 @@ router.get('/', async (req, res) => {
     }
 });
 
-router.put('/:id/confirm', async (req, res) => {
+// API xác nhận đặt phòng
+router.put('/booking/:id/confirm', async (req, res) => {
     try {
         const updatedBooking = await Booking.findByIdAndUpdate(req.params.id, { status: 'confirmed' }, { new: true });
         if (!updatedBooking) return res.status(404).json({ message: "Đặt phòng không tồn tại" });
@@ -25,30 +89,25 @@ router.put('/:id/confirm', async (req, res) => {
     }
 });
 
-// [RQ04] Đặt phòng
-router.post('/book', async (req, res) => {
-    const { userId, roomId, startDate, endDate } = req.body;
-    const booking = new Booking({ userId, roomId, startDate, endDate });
-    await booking.save();
-    res.json({ message: "Đặt phòng thành công!" });
+// API hủy đặt phòng
+router.delete('/booking/:id/cancel', async (req, res) => {
+    try {
+        await Booking.findByIdAndDelete(req.params.id);
+        res.json({ message: "Hủy đặt phòng thành công!" });
+    } catch (error) {
+        res.status(500).json({ message: "Lỗi máy chủ", error: error.message });
+    }
 });
 
-// [RQ05] Hủy đặt phòng
-router.delete('/cancel/:id', async (req, res) => {
-    await Booking.findByIdAndDelete(req.params.id);
-    res.json({ message: "Hủy đặt phòng thành công!" });
-});
-
-router.get('/:userId', async (req, res) => {
+// API lấy lịch sử đặt phòng của user
+router.get('/bookings/:userId', async (req, res) => {
     try {
         const { userId } = req.params;
-
-        // Kiểm tra userId có hợp lệ không
         const bookings = await Booking.find({ userId })
-            .populate('roomId', 'roomNumber type price') // Lấy thông tin phòng
-            .sort({ checkIn: -1 }); // Sắp xếp theo ngày check-in mới nhất
+            .populate('roomId', 'roomNumber type price')
+            .sort({ checkIn: -1 });
 
-        if (!bookings || bookings.length === 0) {
+        if (!bookings.length) {
             return res.status(404).json({ message: "Người dùng chưa có lịch sử đặt phòng nào." });
         }
 
@@ -57,48 +116,5 @@ router.get('/:userId', async (req, res) => {
         res.status(500).json({ message: "Lỗi máy chủ", error: error.message });
     }
 });
-
-router.get('/:bookingId', async (req, res) => {
-    try {
-        const { bookingId } = req.params;
-
-        const booking = await Booking.findById(bookingId)
-            .populate('userId', 'name email')
-            .populate('roomId', 'roomNumber type price');
-
-        if (!booking) {
-            return res.status(404).json({ message: "Không tìm thấy đơn đặt phòng." });
-        }
-
-        res.json({ message: "Chi tiết đơn đặt phòng", booking });
-    } catch (error) {
-        res.status(500).json({ message: "Lỗi máy chủ", error: error.message });
-    }
-});
-
-router.get('/:userId/status/:status', async (req, res) => {
-    try {
-        const { userId, status } = req.params;
-
-        // Kiểm tra trạng thái hợp lệ
-        const validStatuses = ['pending', 'confirmed', 'canceled'];
-        if (!validStatuses.includes(status)) {
-            return res.status(400).json({ message: "Trạng thái không hợp lệ." });
-        }
-
-        const bookings = await Booking.find({ userId, status })
-            .populate('roomId', 'roomNumber type price')
-            .sort({ checkIn: -1 });
-
-        if (!bookings.length) {
-            return res.status(404).json({ message: `Không có đơn đặt phòng nào với trạng thái: ${status}` });
-        }
-
-        res.json({ message: `Danh sách đơn đặt phòng có trạng thái ${status}`, bookings });
-    } catch (error) {
-        res.status(500).json({ message: "Lỗi máy chủ", error: error.message });
-    }
-});
-
 
 module.exports = router;

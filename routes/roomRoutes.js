@@ -12,6 +12,58 @@ router.get('/', async (req, res) => {
     }
   });
 
+  // API đặt phòng
+router.post('/:id/book', async (req, res) => {
+    try {
+        const { userId, checkInDate, checkOutDate } = req.body;
+        const room = await Room.findById(req.params.id);
+        
+        if (!room) {
+            return res.status(404).json({ message: 'Phòng không tồn tại' });
+        }
+
+        if (room.status === 'booked') {
+            return res.status(400).json({ message: 'Phòng đã được đặt' });
+        }
+
+        const newBooking = await Booking.create({
+            roomId: req.params.id,
+            userId,
+            checkInDate,
+            checkOutDate,
+            status: 'pending',
+        });
+
+        res.status(201).json({ message: 'Yêu cầu đặt phòng đã gửi!', booking: newBooking });
+    } catch (error) {
+        res.status(500).json({ message: 'Lỗi máy chủ', error: error.message });
+    }
+});
+
+// API admin duyệt đơn đặt phòng
+router.put('/booking/:bookingId/approve', async (req, res) => {
+    try {
+        const { status } = req.body; // 'approved' hoặc 'rejected'
+        const booking = await Booking.findById(req.params.bookingId);
+        
+        if (!booking) {
+            return res.status(404).json({ message: 'Đơn đặt phòng không tồn tại' });
+        }
+
+        booking.status = status;
+        await booking.save();
+        
+        if (status === 'approved') {
+            await Room.findByIdAndUpdate(booking.roomId, { status: 'booked' });
+        }
+
+        res.json({ message: `Đơn đặt phòng đã được ${status}`, booking });
+    } catch (error) {
+        res.status(500).json({ message: 'Lỗi máy chủ', error: error.message });
+    }
+});
+
+
 router.post('/', async (req, res) => {
     const { roomNumber, type, price, status, imageUrl } = req.body;
     

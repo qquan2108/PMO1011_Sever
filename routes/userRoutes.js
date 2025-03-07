@@ -66,9 +66,15 @@ router.put('/:id/role', async (req, res) => {
 // [RQ04] Xóa người dùng
 router.delete('/:id', async (req, res) => {
   try {
+      const user = await User.findById(req.params.id);
+      if (!user) return res.status(404).json({ message: "Người dùng không tồn tại" });
+
+      // Kiểm tra nếu vai trò là admin
+      if (user.role === 'admin') {
+          return res.status(403).json({ message: "Không thể xóa người dùng có vai trò admin" });
+      }
+
       const deletedUser = await User.findByIdAndDelete(req.params.id);
-      if (!deletedUser) return res.status(404).json({ message: "Người dùng không tồn tại" });
-      
       res.json({ message: "Xóa người dùng thành công" });
   } catch (error) {
       console.error(error);
